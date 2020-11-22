@@ -7,7 +7,7 @@ basic: Data.class Objective.class
 
 objectives: BitCounter.class ColorPartition.class Fermat.class
 
-methods: binMeta.class RandomWalk.class
+methods: binMeta.class RandomWalk.class HarmonySearch.class
 
 binMeta.class: binMeta.java Data.class Objective.class
 	javac -cp . binMeta.java
@@ -29,4 +29,10 @@ Objective.class: Objective.java
 
 RandomWalk.class: RandomWalk.java binMeta.class BitCounter.class ColorPartition.class Fermat.class
 	javac -cp . RandomWalk.java
+
+HarmonySearch.class: HarmonySearch.java binMeta.class BitCounter.class ColorPartition.class Fermat.class
+	javac -cp . HarmonySearch.java
+
+clean:
+	rm -rf *.class
 
