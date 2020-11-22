@@ -40,29 +40,58 @@ public class HarmonySearch extends binMeta
    public void optimize()  // by HarmonySearch
    {
       Random R = new Random();
-      Data D = new Data(this.solution);
       long startime = System.currentTimeMillis();
+      int HMSIZE = 10; // Harmony memory size
+      int PA = 3;      // Pitch adjusting
+
+      //Initialize the harmony memory randomly
+      Data [] harmonyMemory = new Data[HMSIZE];   
+      for(int i = 0 ; i<harmonyMemory.length ; i++){
+         harmonyMemory[i] = new Data(this.solution);
+      }
 
       // main loop
       while (System.currentTimeMillis() - startime < this.maxTime)
       {
-         // the random walker can walk in a neighbourhood of D
-         // (Hamming distance is randomly selected among 1, 2 and 3)
-         int h = 1 + R.nextInt(3);
+         // Improvise a new harmony close to a random harmony in harmony memory
+         int number = R.nextInt(HMSIZE);
+         Data selectedHarmony = harmonyMemory[number];
+         int adjusting = 1 + R.nextInt(PA);
+         Data newHarmony = selectedHarmony.randomSelectInNeighbour(adjusting);
 
-         // generating a new solution in the neighbour of D with Hamming distance h
-         Data newD = D.randomSelectInNeighbour(h);
-
-         // evaluating the quality of the generated solution
-         double value = obj.value(newD);
-         if (this.objValue > value)
-         {
-            this.objValue = value;
-            this.solution = new Data(newD);
+         // Looking for the worst harmony
+         double worstValue = obj.value(harmonyMemory[0]);
+         int worstValuePosition = 0;
+         for(int i = 0 ; i<harmonyMemory.length ; i++){
+            if(obj.value(harmonyMemory[i]) > worstValue ){
+               worstValue = obj.value(harmonyMemory[i]);
+               worstValuePosition = i;
+            }
          }
 
-         // the walk continues from the new generated solution
-         D = newD;
+         // Is new harmony better than the worst harmony of harmonyMemory ?
+         double valueNewHarmony = obj.value(newHarmony);
+         if (worstValue > valueNewHarmony){
+            harmonyMemory[worstValuePosition] = newHarmony;
+         }
+
+         // Looking for the best harmony
+         double bestValue = obj.value(harmonyMemory[0]);
+         int bestValuePosition = 0;
+         for(int i = 0 ; i<harmonyMemory.length ; i++){
+            if(obj.value(harmonyMemory[i]) < bestValue ){
+               bestValue = obj.value(harmonyMemory[i]);
+               bestValuePosition = i;
+            }
+         }
+
+         // Update with the best Harmony
+         if (this.objValue > bestValue)
+         {
+            this.objValue = bestValue;
+            this.solution = new Data(harmonyMemory[bestValuePosition]);
+         }
+
       }
    }
 
@@ -75,13 +104,13 @@ public class HarmonySearch extends binMeta
       int n = 50;
       Objective obj = new BitCounter(n);
       Data D = obj.solutionSample();
-      HarmonySearch rw = new HarmonySearch(D,obj,ITMAX);
-      System.out.println(rw);
-      System.out.println("starting point : " + rw.getSolution());
+      HarmonySearch hs = new HarmonySearch(D,obj,ITMAX);
+      System.out.println(hs);
+      System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
-      rw.optimize();
-      System.out.println(rw);
-      System.out.println("solution : " + rw.getSolution());
+      hs.optimize();
+      System.out.println(hs);
+      System.out.println("solution : " + hs.getSolution());
       System.out.println();
 
       // Fermat
@@ -89,18 +118,18 @@ public class HarmonySearch extends binMeta
       int ndigits = 10;
       obj = new Fermat(exp,ndigits);
       D = obj.solutionSample();
-      rw = new HarmonySearch(D,obj,ITMAX);
-      System.out.println(rw);
-      System.out.println("starting point : " + rw.getSolution());
+      hs = new HarmonySearch(D,obj,ITMAX);
+      System.out.println(hs);
+      System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
-      rw.optimize();
-      System.out.println(rw);
-      System.out.println("solution : " + rw.getSolution());
-      Data x = new Data(rw.solution,0,ndigits-1);
-      Data y = new Data(rw.solution,ndigits,2*ndigits-1);
-      Data z = new Data(rw.solution,2*ndigits,3*ndigits-1);
+      hs.optimize();
+      System.out.println(hs);
+      System.out.println("solution : " + hs.getSolution());
+      Data x = new Data(hs.solution,0,ndigits-1);
+      Data y = new Data(hs.solution,ndigits,2*ndigits-1);
+      Data z = new Data(hs.solution,2*ndigits,3*ndigits-1);
       System.out.print("equivalent to the equation : " + x.posLongValue() + "^" + exp + " + " + y.posLongValue() + "^" + exp);
-      if (rw.objValue == 0.0)
+      if (hs.objValue == 0.0)
          System.out.print(" == ");
       else
          System.out.print(" ?= ");
@@ -111,14 +140,14 @@ public class HarmonySearch extends binMeta
       n = 4;  int m = 14;
       ColorPartition cp = new ColorPartition(n,m);
       D = cp.solutionSample();
-      rw = new HarmonySearch(D,cp,ITMAX);
-      System.out.println(rw);
-      System.out.println("starting point : " + rw.getSolution());
+      hs = new HarmonySearch(D,cp,ITMAX);
+      System.out.println(hs);
+      System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
-      rw.optimize();
-      System.out.println(rw);
-      System.out.println("solution : " + rw.getSolution());
-      cp.value(rw.solution);
+      hs.optimize();
+      System.out.println(hs);
+      System.out.println("solution : " + hs.getSolution());
+      cp.value(hs.solution);
       System.out.println("corresponding to the matrix :\n" + cp.show());
    }
 }
