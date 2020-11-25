@@ -1,25 +1,25 @@
 
-/* HarmonySearch class
+/* Sequential_HarmonySearch class
  *
  * binMeta project
  *
- * last update: Nov 22, 2020
+ * last update: Nov 25, 2020
  *
- * JD
+ * Jean DERIEUX
  */
 
 import java.util.Random;
 import java.util.List;
 import java.util.ArrayList;
 
-public class HarmonySearch extends binMeta
+public class Sequential_HarmonySearch extends binMeta
 {
-   // HarmonySearch constructor
-   public HarmonySearch(Data startPoint,Objective obj,long maxTime)
+   // Sequential_HarmonySearch constructor
+   public Sequential_HarmonySearch(Data startPoint,Objective obj,long maxTime)
    {
       try
       {
-         String msg = "Impossible to create HarmonySearch object: ";
+         String msg = "Impossible to create Sequential_HarmonySearch object: ";
          if (maxTime <= 0) throw new Exception(msg + "the maximum execution time is 0 or even negative");
          this.maxTime = maxTime;
          if (startPoint == null) throw new Exception(msg + "the reference to the starting point is null");
@@ -27,7 +27,7 @@ public class HarmonySearch extends binMeta
          if (obj == null) throw new Exception(msg + "the reference to the objective is null");
          this.obj = obj;
          this.objValue = this.obj.value(this.solution);
-         this.metaName = "HarmonySearch";
+         this.metaName = "Sequential_HarmonySearch";
       }
       catch (Exception e)
       {
@@ -37,7 +37,7 @@ public class HarmonySearch extends binMeta
    }
 
    @Override
-   public void optimize()  // by HarmonySearch
+   public void optimize()  // by Sequential_HarmonySearch
    {
       Random R = new Random();
       long startime = System.currentTimeMillis();
@@ -69,7 +69,7 @@ public class HarmonySearch extends binMeta
             }
          }
 
-         // Is new harmony better than the worst harmony of harmonyMemory ?
+         // If newharmony is better than the worst harmony of harmonyMemory then replace worst harmony with newharmony
          double valueNewHarmony = obj.value(newHarmony);
          if (worstValue > valueNewHarmony){
             harmonyMemory[worstValuePosition] = newHarmony;
@@ -104,7 +104,7 @@ public class HarmonySearch extends binMeta
       int n = 50;
       Objective obj = new BitCounter(n);
       Data D = obj.solutionSample();
-      HarmonySearch hs = new HarmonySearch(D,obj,ITMAX);
+      Sequential_HarmonySearch hs = new Sequential_HarmonySearch(D,obj,ITMAX);
       System.out.println(hs);
       System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
@@ -118,7 +118,7 @@ public class HarmonySearch extends binMeta
       int ndigits = 10;
       obj = new Fermat(exp,ndigits);
       D = obj.solutionSample();
-      hs = new HarmonySearch(D,obj,ITMAX);
+      hs = new Sequential_HarmonySearch(D,obj,ITMAX);
       System.out.println(hs);
       System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
@@ -140,7 +140,7 @@ public class HarmonySearch extends binMeta
       n = 4;  int m = 14;
       ColorPartition cp = new ColorPartition(n,m);
       D = cp.solutionSample();
-      hs = new HarmonySearch(D,cp,ITMAX);
+      hs = new Sequential_HarmonySearch(D,cp,ITMAX);
       System.out.println(hs);
       System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
