@@ -43,10 +43,16 @@ public class MultiThreading_HarmonySearch extends binMeta
 
       ThreadAgent T1 = new ThreadAgent(startime, this);
       T1.start();
+      ThreadAgent T2 = new ThreadAgent(startime, this);
+      T2.start();
+
+
 
       try 
       {
          T1.join();
+         T2.join();
+
       } 
       catch(Exception e)
       {
