@@ -39,60 +39,95 @@ public class MultiThreading_HarmonySearch extends binMeta
    @Override
    public void optimize()  // by MultiThreading_HarmonySearch
    {
-      Random R = new Random();
       long startime = System.currentTimeMillis();
-      int HMSIZE = 10; // Harmony memory size
-      int PA = 3;      // Pitch adjusting
 
-      //Initialize the harmony memory randomly
-      Data [] harmonyMemory = new Data[HMSIZE];   
-      for(int i = 0 ; i<harmonyMemory.length ; i++){
-         harmonyMemory[i] = new Data(this.solution);
-      }
+      ThreadAgent T1 = new ThreadAgent(startime, this);
+      T1.start();
 
-      // main loop
-      while (System.currentTimeMillis() - startime < this.maxTime)
+      try 
       {
-         // Improvise a new harmony close to a random harmony in harmony memory
-         int number = R.nextInt(HMSIZE);
-         Data selectedHarmony = harmonyMemory[number];
-         int adjusting = 1 + R.nextInt(PA);
-         Data newHarmony = selectedHarmony.randomSelectInNeighbour(adjusting);
+         T1.join();
+      } 
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         System.exit(1);      }
 
-         // Looking for the worst harmony
-         double worstValue = obj.value(harmonyMemory[0]);
-         int worstValuePosition = 0;
+
+   }
+
+   class ThreadAgent extends Thread {
+
+      private MultiThreading_HarmonySearch mhs;
+      private long startime;
+
+      ThreadAgent(long startime , MultiThreading_HarmonySearch mhs) {
+         this.startime = startime;
+         this.mhs = mhs;
+      }  
+
+    
+
+      @Override
+      public void run() {
+
+         Random R = new Random();
+         int HMSIZE = 10; // Harmony memory size
+         int PA = 3;      // Pitch adjusting
+
+         //Initialize the harmony memory randomly
+         Data [] harmonyMemory = new Data[HMSIZE];   
          for(int i = 0 ; i<harmonyMemory.length ; i++){
-            if(obj.value(harmonyMemory[i]) > worstValue ){
-               worstValue = obj.value(harmonyMemory[i]);
-               worstValuePosition = i;
-            }
+            harmonyMemory[i] = new Data(mhs.solution);
          }
 
-         // If newharmony is better than the worst harmony of harmonyMemory then replace worst harmony with newharmony
-         double valueNewHarmony = obj.value(newHarmony);
-         if (worstValue > valueNewHarmony){
-            harmonyMemory[worstValuePosition] = newHarmony;
-         }
-
-         // Looking for the best harmony
-         double bestValue = obj.value(harmonyMemory[0]);
-         int bestValuePosition = 0;
-         for(int i = 0 ; i<harmonyMemory.length ; i++){
-            if(obj.value(harmonyMemory[i]) < bestValue ){
-               bestValue = obj.value(harmonyMemory[i]);
-               bestValuePosition = i;
-            }
-         }
-
-         // Update with the best Harmony
-         if (this.objValue > bestValue)
+         // main loop
+         while (System.currentTimeMillis() - startime < mhs.maxTime)
          {
-            this.objValue = bestValue;
-            this.solution = new Data(harmonyMemory[bestValuePosition]);
+            // Improvise a new harmony close to a random harmony in harmony memory
+            int number = R.nextInt(HMSIZE);
+            Data selectedHarmony = harmonyMemory[number];
+            int adjusting = 1 + R.nextInt(PA);
+            Data newHarmony = selectedHarmony.randomSelectInNeighbour(adjusting);
+
+            // Looking for the worst harmony
+            double worstValue = obj.value(harmonyMemory[0]);
+            int worstValuePosition = 0;
+            for(int i = 0 ; i<harmonyMemory.length ; i++){
+               if(obj.value(harmonyMemory[i]) > worstValue ){
+                  worstValue = obj.value(harmonyMemory[i]);
+                  worstValuePosition = i;
+               }
+            }
+
+            // If newharmony is better than the worst harmony of harmonyMemory then replace worst harmony with newharmony
+            double valueNewHarmony = obj.value(newHarmony);
+            if (worstValue > valueNewHarmony){
+               harmonyMemory[worstValuePosition] = newHarmony;
+            }
+
+            // Looking for the best harmony
+            double bestValue = obj.value(harmonyMemory[0]);
+            int bestValuePosition = 0;
+            for(int i = 0 ; i<harmonyMemory.length ; i++){
+               if(obj.value(harmonyMemory[i]) < bestValue ){
+                  bestValue = obj.value(harmonyMemory[i]);
+                  bestValuePosition = i;
+               }
+            }
+
+            // Update with the best Harmony
+            if (mhs.objValue > bestValue)
+            {
+               mhs.objValue = bestValue;
+               mhs.solution = new Data(harmonyMemory[bestValuePosition]);
+            }
+
          }
 
       }
+
+
    }
 
    // main
