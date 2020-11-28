@@ -11,6 +11,8 @@
 import java.util.Random;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.*; 
+
 
 public class MultiThreading_HarmonySearch extends binMeta
 {
@@ -48,9 +50,11 @@ public class MultiThreading_HarmonySearch extends binMeta
    public void optimize()  // by MultiThreading_HarmonySearch
    {
       long startime = System.currentTimeMillis();
+      Semaphore sem = new Semaphore(1);
 
-      ThreadAgent T1 = new ThreadAgent(startime, this);
-      ThreadAgent T2 = new ThreadAgent(startime, this);
+
+      ThreadAgent T1 = new ThreadAgent(startime, this, sem);
+      ThreadAgent T2 = new ThreadAgent(startime, this, sem);
 
       T1.start();
       T2.start();
@@ -59,13 +63,14 @@ public class MultiThreading_HarmonySearch extends binMeta
 
       try 
       {
-         T1.join();
-         T2.join();
+        T1.join();
+        T2.join();
       } 
-      catch(Exception e)
+      catch(InterruptedException e)
       {
-         e.printStackTrace();
-         System.exit(1);
+	  	e.printStackTrace();
+        System.exit(1);
+
       }
 
 
@@ -75,10 +80,13 @@ public class MultiThreading_HarmonySearch extends binMeta
 
       private MultiThreading_HarmonySearch mhs;
       private long startime;
+      Semaphore sem; 
 
-      ThreadAgent(long startime , MultiThreading_HarmonySearch mhs) {
+
+      ThreadAgent(long startime,MultiThreading_HarmonySearch mhs,Semaphore sem) {
          this.startime = startime;
          this.mhs = mhs;
+         this.sem = sem;
       }  
 
     
@@ -91,7 +99,7 @@ public class MultiThreading_HarmonySearch extends binMeta
          //Initialize the harmony memory randomly
          Data [] harmonyMemory = new Data[mhs.harmonyMemorySize];   
          for(int i = 0 ; i<harmonyMemory.length ; i++){
-            harmonyMemory[i] = new Data(mhs.solution);
+            harmonyMemory[i] = new Data(mhs.solution.numberOfBits(), 0.5);
          }
 
          // main loop
@@ -130,11 +138,22 @@ public class MultiThreading_HarmonySearch extends binMeta
             }
 
             // Update with the best Harmony
-            if (mhs.objValue > bestValue)
+            try
             {
-               mhs.objValue = bestValue;
-               mhs.solution = new Data(harmonyMemory[bestValuePosition]);
+            	sem.acquire();
+	            if (mhs.objValue > bestValue) 
+	            {
+	               mhs.objValue = bestValue;
+	               mhs.solution = new Data(harmonyMemory[bestValuePosition]);
+	            }
             }
+            catch(InterruptedException e)
+            {
+	        	e.printStackTrace();
+	        	System.exit(1);
+
+            }            
+            sem.release();
 
          }
 
@@ -151,7 +170,7 @@ public class MultiThreading_HarmonySearch extends binMeta
       int PA = 3;         // Pitch adjusting
 
       // BitCounter
-      int n = 15000;
+      int n = 8000;
       Objective obj = new BitCounter(n);
       Data D = obj.solutionSample();
       MultiThreading_HarmonySearch hs = new MultiThreading_HarmonySearch(D,obj,ITMAX,HMSIZE,PA);
@@ -187,7 +206,7 @@ public class MultiThreading_HarmonySearch extends binMeta
       System.out.println();
 
       // ColorPartition
-      n = 8;  int m = 16;
+      n = 4;  int m = 14;
       ColorPartition cp = new ColorPartition(n,m);
       D = cp.solutionSample();
       hs = new MultiThreading_HarmonySearch(D,cp,ITMAX,HMSIZE,PA);
