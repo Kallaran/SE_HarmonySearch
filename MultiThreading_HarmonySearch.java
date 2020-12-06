@@ -3,7 +3,7 @@
  *
  * binMeta project
  *
- * last update: Nov 25, 2020
+ * last update: Dec 6, 2020
  *
  * Jean DERIEUX
  */
@@ -110,6 +110,7 @@ public class MultiThreading_HarmonySearch extends binMeta
          // main loop
          while (System.currentTimeMillis() - startime < mhs.maxTime)
          {
+
          	// Choose to considerate or not the harmony memory
          	if( R.nextDouble() < mhs.harmonyMemoryConsideration){
 	         	// Improvise a new harmony close to a random harmony in harmony memory
@@ -122,51 +123,56 @@ public class MultiThreading_HarmonySearch extends binMeta
          		// Choose to not considerate the harmony memory
           		newHarmony = new Data(mhs.solution.numberOfBits(), 0.5);
          	}
-                    
 
-            // Looking for the worst harmony
-            double worstValue = obj.value(harmonyMemory[0]);
-            int worstValuePosition = 0;
-            for(int i = 0 ; i<harmonyMemory.length ; i++){
-               if(obj.value(harmonyMemory[i]) > worstValue ){
-                  worstValue = obj.value(harmonyMemory[i]);
-                  worstValuePosition = i;
-               }
-            }
 
-            // Is new harmony better than the worst harmony of harmonyMemory ?
-            double valueNewHarmony = obj.value(newHarmony);
-            if (worstValue > valueNewHarmony){
-               harmonyMemory[worstValuePosition] = newHarmony;
-            }
-
-            // Looking for the best harmony
-            double bestValue = obj.value(harmonyMemory[0]);
-            int bestValuePosition = 0;
-            for(int i = 0 ; i<harmonyMemory.length ; i++){
-               if(obj.value(harmonyMemory[i]) < bestValue ){
-                  bestValue = obj.value(harmonyMemory[i]);
-                  bestValuePosition = i;
-               }
-            }
-
-            // Update with the best Harmony
-            try
+			try
             {
-            	sem.acquire();
+            	sem.acquire();                    
+
+	            // Looking for the worst harmony
+	            double worstValue = obj.value(harmonyMemory[0]);
+	            int worstValuePosition = 0;
+	            for(int i = 0 ; i<harmonyMemory.length ; i++){
+	               if(obj.value(harmonyMemory[i]) > worstValue ){
+	                  worstValue = obj.value(harmonyMemory[i]);
+	                  worstValuePosition = i;
+	               }
+	            }
+
+	            // Is new harmony better than the worst harmony of harmonyMemory ?
+	            double valueNewHarmony = obj.value(newHarmony);
+	            if (worstValue > valueNewHarmony){
+	               harmonyMemory[worstValuePosition] = newHarmony;
+	            }
+
+	            // Looking for the best harmony
+	            double bestValue = obj.value(harmonyMemory[0]);
+	            int bestValuePosition = 0;
+	            for(int i = 0 ; i<harmonyMemory.length ; i++){
+	               if(obj.value(harmonyMemory[i]) < bestValue ){
+	                  bestValue = obj.value(harmonyMemory[i]);
+	                  bestValuePosition = i;
+	               }
+	            }
+
+	            // Update with the best Harmony            
 	            if (mhs.objValue > bestValue) 
 	            {
 	               mhs.objValue = bestValue;
 	               mhs.solution = new Data(harmonyMemory[bestValuePosition]);
 	            }
+
             }
             catch(InterruptedException e)
             {
 	        	e.printStackTrace();
 	        	System.exit(1);
 
-            }            
-            sem.release();
+            }
+            finally
+            {
+	            sem.release();
+            }       
 
          }
 
@@ -220,7 +226,7 @@ public class MultiThreading_HarmonySearch extends binMeta
       System.out.println();
 
       // ColorPartition
-      n = 4;  int m = 14;
+      n = 15;  int m = 30;
       ColorPartition cp = new ColorPartition(n,m);
       D = cp.solutionSample();
       hs = new MultiThreading_HarmonySearch(D,cp,ITMAX,HMSIZE,PA,HMC);
