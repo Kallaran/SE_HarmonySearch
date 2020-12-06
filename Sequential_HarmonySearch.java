@@ -14,8 +14,13 @@ import java.util.ArrayList;
 
 public class Sequential_HarmonySearch extends binMeta
 {
+
+	protected int harmonyMemorySize;               // Harmony memory size
+    protected int pitchAdjusting;                  // Pitch adjusting
+    protected double harmonyMemoryConsideration;    // Harmony memory consideration
+
    // Sequential_HarmonySearch constructor
-   public Sequential_HarmonySearch(Data startPoint,Objective obj,long maxTime)
+   public Sequential_HarmonySearch(Data startPoint,Objective obj,long maxTime,int harmonyMemorySize,int pitchAdjusting,double harmonyMemoryConsideration)
    {
       try
       {
@@ -28,6 +33,13 @@ public class Sequential_HarmonySearch extends binMeta
          this.obj = obj;
          this.objValue = this.obj.value(this.solution);
          this.metaName = "Sequential_HarmonySearch";
+	     if (harmonyMemorySize <= 0) throw new Exception(msg + "the harmonyMemorySize is 0 or even negative");
+	     this.harmonyMemorySize = harmonyMemorySize;
+ 	     if (pitchAdjusting <= 0) throw new Exception(msg + "the pitchAdjusting is 0 or even negative");
+ 	     this.pitchAdjusting = pitchAdjusting;
+ 	     if (harmonyMemoryConsideration < 0.0 || harmonyMemoryConsideration > 1.0) throw new Exception("Specified probability of harmonyMemoryConsideration should be contained in [0,1]");
+ 	     this.harmonyMemoryConsideration = harmonyMemoryConsideration;
+
       }
       catch (Exception e)
       {
@@ -39,51 +51,59 @@ public class Sequential_HarmonySearch extends binMeta
    @Override
    public void optimize()  // by Sequential_HarmonySearch
    {
-      Random R = new Random();
-      long startime = System.currentTimeMillis();
-      int HMSIZE = 10; // Harmony memory size
-      int PA = 3;      // Pitch adjusting
+    	Random R = new Random();
+        Data newHarmony;
+        long startime = System.currentTimeMillis();
 
-      //Initialize the harmony memory randomly
-      Data [] harmonyMemory = new Data[HMSIZE];   
-      for(int i = 0 ; i<harmonyMemory.length ; i++){
-         harmonyMemory[i] = new Data(this.solution);
-      }
-
-      // main loop
-      while (System.currentTimeMillis() - startime < this.maxTime)
-      {
-         // Improvise a new harmony close to a random harmony in harmony memory
-         int number = R.nextInt(HMSIZE);
-         Data selectedHarmony = harmonyMemory[number];
-         int adjusting = 1 + R.nextInt(PA);
-         Data newHarmony = selectedHarmony.randomSelectInNeighbour(adjusting);
-
-         // Looking for the worst harmony
-         double worstValue = obj.value(harmonyMemory[0]);
-         int worstValuePosition = 0;
+         
+        //Initialize the harmony memory randomly
+         Data [] harmonyMemory = new Data[this.harmonyMemorySize];   
          for(int i = 0 ; i<harmonyMemory.length ; i++){
-            if(obj.value(harmonyMemory[i]) > worstValue ){
-               worstValue = obj.value(harmonyMemory[i]);
-               worstValuePosition = i;
-            }
+         	harmonyMemory[i] = new Data(this.solution.numberOfBits(), 0.5);
          }
 
-         // If newharmony is better than the worst harmony of harmonyMemory then replace worst harmony with newharmony
-         double valueNewHarmony = obj.value(newHarmony);
-         if (worstValue > valueNewHarmony){
-            harmonyMemory[worstValuePosition] = newHarmony;
-         }
+         // main loop
+         while (System.currentTimeMillis() - startime < this.maxTime)
+         {
+         	// Choose to considerate or not the harmony memory
+         	if( R.nextDouble() < this.harmonyMemoryConsideration){
+	         	// Improvise a new harmony close to a random harmony in harmony memory
+	            int number = R.nextInt(this.harmonyMemorySize);
+	            Data selectedHarmony = harmonyMemory[number];
+	            int adjusting = 1 + R.nextInt(this.pitchAdjusting);
+	            newHarmony = selectedHarmony.randomSelectInNeighbour(adjusting);
+         	}
+         	else{
+         		// Choose to not considerate the harmony memory
+          		newHarmony = new Data(this.solution.numberOfBits(), 0.5);
+         	}
+                    
 
-         // Looking for the best harmony
-         double bestValue = obj.value(harmonyMemory[0]);
-         int bestValuePosition = 0;
-         for(int i = 0 ; i<harmonyMemory.length ; i++){
-            if(obj.value(harmonyMemory[i]) < bestValue ){
-               bestValue = obj.value(harmonyMemory[i]);
-               bestValuePosition = i;
+            // Looking for the worst harmony
+            double worstValue = obj.value(harmonyMemory[0]);
+            int worstValuePosition = 0;
+            for(int i = 0 ; i<harmonyMemory.length ; i++){
+               if(obj.value(harmonyMemory[i]) > worstValue ){
+                  worstValue = obj.value(harmonyMemory[i]);
+                  worstValuePosition = i;
+               }
             }
-         }
+
+            // Is new harmony better than the worst harmony of harmonyMemory ?
+            double valueNewHarmony = obj.value(newHarmony);
+            if (worstValue > valueNewHarmony){
+               harmonyMemory[worstValuePosition] = newHarmony;
+            }
+
+            // Looking for the best harmony
+            double bestValue = obj.value(harmonyMemory[0]);
+            int bestValuePosition = 0;
+            for(int i = 0 ; i<harmonyMemory.length ; i++){
+               if(obj.value(harmonyMemory[i]) < bestValue ){
+                  bestValue = obj.value(harmonyMemory[i]);
+                  bestValuePosition = i;
+               }
+            }
 
          // Update with the best Harmony
          if (this.objValue > bestValue)
@@ -98,19 +118,22 @@ public class Sequential_HarmonySearch extends binMeta
    // main
    public static void main(String[] args)
    {
-      int ITMAX = 10000;  // number of iterations
+      int ITMAX = 10000;  // Number of iterations
+      int HMSIZE = 10;    // Harmony memory size
+      int PA = 3;         // Pitch adjusting
+      double HMC = 0.9;   // Harmony memory consideration 
 
       // BitCounter
-      int n = 50;
+      int n = 8000;
       Objective obj = new BitCounter(n);
       Data D = obj.solutionSample();
-      Sequential_HarmonySearch hs = new Sequential_HarmonySearch(D,obj,ITMAX);
+      Sequential_HarmonySearch hs = new Sequential_HarmonySearch(D,obj,ITMAX,HMSIZE,PA,HMC);
       System.out.println(hs);
-      System.out.println("starting point : " + hs.getSolution());
+      //System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
       hs.optimize();
       System.out.println(hs);
-      System.out.println("solution : " + hs.getSolution());
+      //System.out.println("solution : " + hs.getSolution());
       System.out.println();
 
       // Fermat
@@ -118,7 +141,7 @@ public class Sequential_HarmonySearch extends binMeta
       int ndigits = 10;
       obj = new Fermat(exp,ndigits);
       D = obj.solutionSample();
-      hs = new Sequential_HarmonySearch(D,obj,ITMAX);
+      hs = new Sequential_HarmonySearch(D,obj,ITMAX,HMSIZE,PA,HMC);
       System.out.println(hs);
       System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
@@ -140,7 +163,7 @@ public class Sequential_HarmonySearch extends binMeta
       n = 4;  int m = 14;
       ColorPartition cp = new ColorPartition(n,m);
       D = cp.solutionSample();
-      hs = new Sequential_HarmonySearch(D,cp,ITMAX);
+      hs = new Sequential_HarmonySearch(D,cp,ITMAX,HMSIZE,PA,HMC);
       System.out.println(hs);
       System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
@@ -151,4 +174,5 @@ public class Sequential_HarmonySearch extends binMeta
       System.out.println("corresponding to the matrix :\n" + cp.show());
    }
 }
+
 
