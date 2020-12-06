@@ -17,11 +17,12 @@ import java.util.concurrent.*;
 public class MultiThreading_HarmonySearch extends binMeta
 {
 
-	protected int harmonyMemorySize;     // Harmony memory size
-    protected int pitchAdjusting;        // Pitch adjusting
+	protected int harmonyMemorySize;               // Harmony memory size
+    protected int pitchAdjusting;                  // Pitch adjusting
+    protected double harmonyMemoryConsideration;    // Harmony memory consideration
 
    // MultiThreading_HarmonySearch constructor
-   public MultiThreading_HarmonySearch(Data startPoint,Objective obj,long maxTime,int harmonyMemorySize,int pitchAdjusting)
+   public MultiThreading_HarmonySearch(Data startPoint,Objective obj,long maxTime,int harmonyMemorySize,int pitchAdjusting,double harmonyMemoryConsideration)
    {
       try
       {
@@ -38,6 +39,9 @@ public class MultiThreading_HarmonySearch extends binMeta
 	     this.harmonyMemorySize = harmonyMemorySize;
  	     if (pitchAdjusting <= 0) throw new Exception(msg + "the pitchAdjusting is 0 or even negative");
  	     this.pitchAdjusting = pitchAdjusting;
+ 	     if (harmonyMemoryConsideration < 0.0 || harmonyMemoryConsideration > 1.0) throw new Exception("Specified probability of harmonyMemoryConsideration should be contained in [0,1]");
+ 	     this.harmonyMemoryConsideration = harmonyMemoryConsideration;
+
       }
       catch (Exception e)
       {
@@ -80,7 +84,7 @@ public class MultiThreading_HarmonySearch extends binMeta
 
       private MultiThreading_HarmonySearch mhs;
       private long startime;
-      Semaphore sem; 
+      private Semaphore sem; 
 
 
       ThreadAgent(long startime,MultiThreading_HarmonySearch mhs,Semaphore sem) {
@@ -95,6 +99,7 @@ public class MultiThreading_HarmonySearch extends binMeta
       public void run() {
 
          Random R = new Random();
+         Data newHarmony;
          
          //Initialize the harmony memory randomly
          Data [] harmonyMemory = new Data[mhs.harmonyMemorySize];   
@@ -105,11 +110,19 @@ public class MultiThreading_HarmonySearch extends binMeta
          // main loop
          while (System.currentTimeMillis() - startime < mhs.maxTime)
          {
-            // Improvise a new harmony close to a random harmony in harmony memory
-            int number = R.nextInt(mhs.harmonyMemorySize);
-            Data selectedHarmony = harmonyMemory[number];
-            int adjusting = 1 + R.nextInt(mhs.pitchAdjusting);
-            Data newHarmony = selectedHarmony.randomSelectInNeighbour(adjusting);
+         	// Choose to considerate or not the harmony memory
+         	if( R.nextDouble() < mhs.harmonyMemoryConsideration){
+	         	// Improvise a new harmony close to a random harmony in harmony memory
+	            int number = R.nextInt(mhs.harmonyMemorySize);
+	            Data selectedHarmony = harmonyMemory[number];
+	            int adjusting = 1 + R.nextInt(mhs.pitchAdjusting);
+	            newHarmony = selectedHarmony.randomSelectInNeighbour(adjusting);
+         	}
+         	else{
+         		// Choose to not considerate the harmony memory
+          		newHarmony = new Data(mhs.solution.numberOfBits(), 0.5);
+         	}
+                    
 
             // Looking for the worst harmony
             double worstValue = obj.value(harmonyMemory[0]);
@@ -165,15 +178,16 @@ public class MultiThreading_HarmonySearch extends binMeta
    // main
    public static void main(String[] args)
    {
-      int ITMAX = 10000;  // number of iterations
+      int ITMAX = 10000;  // Number of iterations
       int HMSIZE = 10;    // Harmony memory size
       int PA = 3;         // Pitch adjusting
+      double HMC = 0.9;   // Harmony memory consideration 
 
       // BitCounter
       int n = 8000;
       Objective obj = new BitCounter(n);
       Data D = obj.solutionSample();
-      MultiThreading_HarmonySearch hs = new MultiThreading_HarmonySearch(D,obj,ITMAX,HMSIZE,PA);
+      MultiThreading_HarmonySearch hs = new MultiThreading_HarmonySearch(D,obj,ITMAX,HMSIZE,PA,HMC);
       System.out.println(hs);
       //System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
@@ -187,7 +201,7 @@ public class MultiThreading_HarmonySearch extends binMeta
       int ndigits = 10;
       obj = new Fermat(exp,ndigits);
       D = obj.solutionSample();
-      hs = new MultiThreading_HarmonySearch(D,obj,ITMAX,HMSIZE,PA);
+      hs = new MultiThreading_HarmonySearch(D,obj,ITMAX,HMSIZE,PA,HMC);
       System.out.println(hs);
       System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
@@ -209,7 +223,7 @@ public class MultiThreading_HarmonySearch extends binMeta
       n = 4;  int m = 14;
       ColorPartition cp = new ColorPartition(n,m);
       D = cp.solutionSample();
-      hs = new MultiThreading_HarmonySearch(D,cp,ITMAX,HMSIZE,PA);
+      hs = new MultiThreading_HarmonySearch(D,cp,ITMAX,HMSIZE,PA,HMC);
       System.out.println(hs);
       System.out.println("starting point : " + hs.getSolution());
       System.out.println("optimizing ...");
